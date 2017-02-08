@@ -1,8 +1,8 @@
 class BoardTile(object):
     
-  def __init__(self, initialStateList):
+  def __init__(self, initialStateList, moves=[]):
     self.array = initialStateList
-    self.current = None
+    self.moves = moves
     
   def left(self):
     mylist = self.array.copy()
@@ -11,8 +11,8 @@ class BoardTile(object):
       return None
     else:
       mylist[position-1], mylist[position] = mylist[position], mylist[position-1]
-    self.current = mylist
-    return BoardTile(mylist)
+      self.moves.append('Left')
+    return BoardTile(mylist, self.moves)
 
   def right(self):
     mylist = self.array.copy()
@@ -21,8 +21,8 @@ class BoardTile(object):
       return None
     else:
       mylist[position+1], mylist[position] = mylist[position], mylist[position+1]
-    self.current = mylist
-    return BoardTile(mylist)
+      self.moves.append('Right')
+    return BoardTile(mylist, self.moves)
 
   def up(self):
     mylist = self.array.copy()
@@ -31,8 +31,8 @@ class BoardTile(object):
       return None
     else:
       mylist[position-3], mylist[position] = mylist[position], mylist[position-3]
-    self.current = mylist
-    return BoardTile(mylist)
+      self.moves.append('Up')
+    return BoardTile(mylist, self.moves)
 
   def down(self):
     mylist = self.array.copy()
@@ -41,8 +41,8 @@ class BoardTile(object):
       return None
     else:
       mylist[position+3], mylist[position] = mylist[position], mylist[position+3]
-    self.current = mylist
-    return BoardTile(mylist)
+      self.moves.append('Down')
+    return BoardTile(mylist, self.moves)
 
   def children(self):
     store=[]
@@ -78,6 +78,9 @@ class BoardTile(object):
 
   def __str__(self):
     return "[" + ",".join(self.array) + "]"
+  
+  def getMoves(self):
+    return self.moves
 
 class Driver(object):
 
@@ -95,9 +98,11 @@ class Driver(object):
     while not len(frontier) == 0:
       state = frontier.popleft()
       explored.add(state)
+      print("CURRENTLY EXPLORING...", state)
 
       if self.goalTest(state):
         print('SUCCESS')
+        print("MOVES: ", state.getMoves())
         return
       
       print("EXPLORED: ", *explored)
@@ -107,7 +112,7 @@ class Driver(object):
         if child in frontier or child in explored:
           pass
         else:
-          print("Appending: ", child)
+          #print("Appending: ", child)
           frontier.append(child)
       print("FRONTIER: ", *frontier)
 
