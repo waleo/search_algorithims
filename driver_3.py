@@ -1,8 +1,8 @@
 class BoardTile(object):
     
-  def __init__(self, initialStateList, moves=[]):
+  def __init__(self, initialStateList, move=""):
     self.array = initialStateList
-    self.moves = moves
+    self.move = move
     
   def left(self):
     mylist = self.array.copy()
@@ -11,8 +11,7 @@ class BoardTile(object):
       return None
     else:
       mylist[position-1], mylist[position] = mylist[position], mylist[position-1]
-      self.moves.append('Left')
-    return BoardTile(mylist, self.moves)
+    return BoardTile(mylist, "Left")
 
   def right(self):
     mylist = self.array.copy()
@@ -21,8 +20,7 @@ class BoardTile(object):
       return None
     else:
       mylist[position+1], mylist[position] = mylist[position], mylist[position+1]
-      self.moves.append('Right')
-    return BoardTile(mylist, self.moves)
+    return BoardTile(mylist, "Right")
 
   def up(self):
     mylist = self.array.copy()
@@ -31,8 +29,7 @@ class BoardTile(object):
       return None
     else:
       mylist[position-3], mylist[position] = mylist[position], mylist[position-3]
-      self.moves.append('Up')
-    return BoardTile(mylist, self.moves)
+    return BoardTile(mylist, "Up")
 
   def down(self):
     mylist = self.array.copy()
@@ -41,8 +38,7 @@ class BoardTile(object):
       return None
     else:
       mylist[position+3], mylist[position] = mylist[position], mylist[position+3]
-      self.moves.append('Down')
-    return BoardTile(mylist, self.moves)
+    return BoardTile(mylist, "Down")
 
   def children(self):
     store=[]
@@ -79,8 +75,8 @@ class BoardTile(object):
   def __str__(self):
     return "[" + ",".join(self.array) + "]"
   
-  def getMoves(self):
-    return self.moves
+  def getMove(self):
+    return self.move
 
 class Driver(object):
 
@@ -93,19 +89,20 @@ class Driver(object):
     startState = BoardTile(initialList)
     frontier = deque()
     frontier.append(startState)
-    explored = set()
+    explored = deque()
 
     while not len(frontier) == 0:
       state = frontier.popleft()
-      explored.add(state)
+      explored.append(state)
       print("CURRENTLY EXPLORING...", state)
+      print("EXPLORED: ", *explored)
 
       if self.goalTest(state):
         print('SUCCESS')
-        print("MOVES: ", state.getMoves())
+        #print("MOVES: ", state.getMoves())
+        self.findShortestPath(explored)
         return
       
-      print("EXPLORED: ", *explored)
       for child in state.children():
         print("CHILD: ", child.getStart())
 
@@ -116,12 +113,24 @@ class Driver(object):
           frontier.append(child)
       print("FRONTIER: ", *frontier)
 
-    print('FAILURE')
+    print('FAILURE') #TODO change this to return failure
     return
 
   def goalTest(self, state):
     #print("START: ", state.getStart())
     return state == BoardTile(['0','1','2','3','4','5','6','7','8'])
+
+  def findShortestPath(self, explored):
+    store = []
+    root = explored.popleft()
+    trackingIndex = root.getStart().index("0")
+
+    for node in explored:
+      nodeIndex = node.getStart().index("0")
+      if nodeIndex < trackingIndex:
+        trackingIndex = nodeIndex
+        store.append(node.getMove())
+    print("Shortest Path: ", store)
     
 driver = Driver()
 driver.bfs("1,2,5,3,4,0,6,7,8")
