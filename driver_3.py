@@ -1,8 +1,9 @@
 class BoardTile(object):
     
-  def __init__(self, initialStateList, move=""):
+  def __init__(self, initialStateList, move="", parent=None):
     self.array = initialStateList
     self.move = move
+    self.parent = parent
     
   def left(self):
     mylist = self.array.copy()
@@ -11,7 +12,7 @@ class BoardTile(object):
       return None
     else:
       mylist[position-1], mylist[position] = mylist[position], mylist[position-1]
-    return BoardTile(mylist, "Left")
+    return BoardTile(mylist, "Left", self)
 
   def right(self):
     mylist = self.array.copy()
@@ -20,7 +21,7 @@ class BoardTile(object):
       return None
     else:
       mylist[position+1], mylist[position] = mylist[position], mylist[position+1]
-    return BoardTile(mylist, "Right")
+    return BoardTile(mylist, "Right", self)
 
   def up(self):
     mylist = self.array.copy()
@@ -29,7 +30,7 @@ class BoardTile(object):
       return None
     else:
       mylist[position-3], mylist[position] = mylist[position], mylist[position-3]
-    return BoardTile(mylist, "Up")
+    return BoardTile(mylist, "Up", self)
 
   def down(self):
     mylist = self.array.copy()
@@ -38,7 +39,7 @@ class BoardTile(object):
       return None
     else:
       mylist[position+3], mylist[position] = mylist[position], mylist[position+3]
-    return BoardTile(mylist, "Down")
+    return BoardTile(mylist, "Down", self)
 
   def children(self):
     store=[]
@@ -78,10 +79,14 @@ class BoardTile(object):
   def getMove(self):
     return self.move
 
+  def getParent(self):
+    return self.parent
+
 class Driver(object):
 
   def __init__(self):
     pass
+
 
   def bfs(self,initialState):
     from collections import deque
@@ -103,7 +108,7 @@ class Driver(object):
 
       if self.goalTest(state):
         duration = time.time() - t
-        ramUsed = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1024
+        ramUsed = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / (1024 * 1024)
         print('SUCCESS')
         #print("MOVES: ", state.getMoves())
         f = open("output.txt", "w")
@@ -113,8 +118,8 @@ class Driver(object):
         f.write('nodes_expanded: ' + str(nodes_expanded) + '\n')
         f.write('fringe_size: ' + str(len(frontier)) + '\n')
         f.write('max_fringe_size: ' + str(len(frontier) + 1) + '\n')
-        f.write('search_depth: ' + '\n')
-        f.write('max_search_depth: ' + '\n')
+        f.write('search_depth: ' + str(self.findSearchDepth(state)) + '\n')
+        f.write('max_search_depth: ' + str(self.maxSearchDepth(frontier)) + '\n')
         f.write('running_time: ' + str(duration) + '\n')
         f.write('max_ram_usage: ' + str(ramUsed) + '\n')
         f.close()
@@ -151,6 +156,18 @@ class Driver(object):
         store.append(node.getMove())
 
     return store
+
+  def findSearchDepth(self, state, count=0):
+    if state.getParent() == None:
+      return count
+     
+    return self.findSearchDepth(state.getParent(), count+1)
+
+  def maxSearchDepth(self, frontier):
+    depths = []
+    for node in frontier:
+      depths.append(self.findSearchDepth(node))
+    return max(depths)
     
 ####### MAIN PROGRAM EXECUTION ##############
 import sys
