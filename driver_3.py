@@ -112,7 +112,7 @@ class Driver(object):
         print('SUCCESS')
         #print("MOVES: ", state.getMoves())
         f = open("output.txt", "w")
-        shortestPath = self.findShortestPath(explored)
+        shortestPath = self.findShortestPath(state)
         f.write('path_to_goal: ' + str(shortestPath) + '\n')
         f.write('cost_of_path: ' + str(len(shortestPath)) + '\n')
         f.write('nodes_expanded: ' + str(nodes_expanded) + '\n')
@@ -137,25 +137,22 @@ class Driver(object):
           frontier.append(child)
       print("FRONTIER: ", *frontier)
 
-    print('FAILURE') #TODO change this to return failure
+    import sys
+    sys.exit("ALGORITHM FAILURE")
     return
 
   def goalTest(self, state):
     #print("START: ", state.getStart())
     return state == BoardTile(['0','1','2','3','4','5','6','7','8'])
 
-  def findShortestPath(self, explored):
-    store = []
-    root = explored.popleft()
-    trackingIndex = root.getStart().index("0")
+  def findShortestPath(self, state, store=[]):
+    if state.getMove() == '':
+      return store
+    
+    store.insert(0,state.getMove())
+    return self.findShortestPath(state.getParent(), store)
 
-    for node in explored:
-      nodeIndex = node.getStart().index("0")
-      if nodeIndex < trackingIndex:
-        trackingIndex = nodeIndex
-        store.append(node.getMove())
-
-    return store
+    
 
   def findSearchDepth(self, state, count=0):
     if state.getParent() == None:
