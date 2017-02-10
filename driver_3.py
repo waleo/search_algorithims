@@ -90,6 +90,7 @@ class Driver(object):
 
   def bfs(self,initialState):
     from collections import deque
+    fringer=1
     initialList = initialState.split(",")
     startState = BoardTile(initialList)
     frontier = deque()
@@ -103,27 +104,29 @@ class Driver(object):
     while not len(frontier) == 0:
       state = frontier.popleft()
       explored.append(state)
-      print("CURRENTLY EXPLORING...", state)
-      print("EXPLORED: ", *explored)
+      #print("CURRENTLY EXPLORING...", state)
+      #print("EXPLORED: ", *explored)
 
       if self.goalTest(state):
         duration = time.time() - t
         ramUsed = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / (1024 * 1024)
-        self.__print_results__(state,frontier,explored,duration, nodes_expanded, ramUsed)
+        self.__print_results__(state,frontier,explored,duration, nodes_expanded, ramUsed, fringer)
         print('SUCCESS')
         return
       
       children = state.children()
       nodes_expanded = nodes_expanded + 1 
       for child in children:
-        print("CHILD: ", child.getStart())
+        #print("CHILD: ", child.getStart())
 
         if child in frontier or child in explored:
           pass
         else:
           #print("Appending: ", child)
           frontier.append(child)
-      print("FRONTIER: ", *frontier)
+          if len(frontier) > fringer:
+            fringer = len(frontier)
+      #print("FRONTIER: ", *frontier)
 
     import sys
     sys.exit("ALGORITHM FAILURE")
@@ -131,10 +134,12 @@ class Driver(object):
 
   def dfs(self,initialState):
     from collections import deque
+    fringer=[]
     initialList = initialState.split(",")
     startState = BoardTile(initialList)
     frontier = deque()
     frontier.append(startState)
+    fringer.append(len(frontier))
     explored = deque()
     nodes_expanded = 0
 
@@ -143,6 +148,7 @@ class Driver(object):
     t = time.time()
     while not len(frontier) == 0:
       state = frontier.popleft()
+      fringer.append(len(frontier))
       explored.append(state)
       print("CURRENTLY EXPLORING...", state)
       print("EXPLORED: ", *explored)
@@ -150,8 +156,9 @@ class Driver(object):
       if self.goalTest(state):
         duration = time.time() - t
         ramUsed = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / (1024 * 1024)
-        self.__print_results__(state,frontier,explored,duration, nodes_expanded, ramUsed)
+        self.__print_results__(state,frontier,explored,duration, nodes_expanded, ramUsed, max(fringer))
         print('SUCCESS')
+        print('FRINGER: ', fringer)
         return
       
       children = state.children()
@@ -165,23 +172,24 @@ class Driver(object):
         else:
           #print("Appending: ", child)
           frontier.append(child)
+          fringer.append(len(frontier))
       print("FRONTIER: ", *frontier)
 
     import sys
     sys.exit("ALGORITHM FAILURE")
 
-  def __print_results__(self,state,frontier,explored, duration, nodes_expanded, ramUsed):
+  def __print_results__(self,state,frontier,explored, duration, nodes_expanded, ram_used, max_fringe_size):
     f = open("output.txt", "w")
     shortestPath = self.findShortestPath(state)
     f.write('path_to_goal: ' + str(shortestPath) + '\n')
     f.write('cost_of_path: ' + str(len(shortestPath)) + '\n')
     f.write('nodes_expanded: ' + str(nodes_expanded) + '\n')
     f.write('fringe_size: ' + str(len(frontier)) + '\n')
-    f.write('max_fringe_size: ' + str(len(set(explored).union(frontier))) + '\n')
+    f.write('max_fringe_size: ' + str(max_fringe_size) + '\n')
     f.write('search_depth: ' + str(self.findSearchDepth(state)) + '\n')
     f.write('max_search_depth: ' + str(self.maxSearchDepth(frontier)) + '\n')
     f.write('running_time: ' + str(duration) + '\n')
-    f.write('max_ram_usage: ' + str(ramUsed) + '\n')
+    f.write('max_ram_usage: ' + str(ram_used) + '\n')
     f.close()
 
   def goalTest(self, state):
