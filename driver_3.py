@@ -82,6 +82,28 @@ class BoardTile(object):
   def getCurrent(self):
     return self.current
 
+  def manhattan_distance(self):
+    m = 0
+    for index,elem in enumerate(self.array):
+      if elem != '0':
+        current_x,current_y = self.__coordinates__(index)
+        goal_x,goal_y = self.__end_state_distance__(elem)
+        m += abs(current_x - goal_x) + abs(current_y - goal_y)
+    return m
+
+  def __coordinates__(self,index):
+    #return x,y for given index in any state of the board
+    x={0:0, 1:1, 2:2, 3:0, 4:1, 5:2, 6:0, 7:1, 8:2}
+    y={0:2, 1:2, 2:2, 3:1, 4:1, 5:1, 6:0, 7:0, 8:0}
+    return x[index],y[index]
+  
+  def __end_state_distance__(self,number):
+    #for a given number, return the desired x,y co-ordinates for the end state
+    x={'1':1, '2':2, '3':0, '4':1, '5':2, '6':0, '7':1, '8':2}
+    y={'1':2, '2':2, '3':1, '4':1, '5':1, '6':0, '7':0, '8':0}
+    return x[number],y[number]
+
+
   def __eq__(self,other):
     if other == None:
       return False
@@ -104,7 +126,52 @@ class BoardTile(object):
   def getParent(self):
     return self.parent
 
+class PriorityQueue(object):
+  from itertools import count
+  from heapq import heappush
+  from heapq import heappop
+
+  def __init__(self):
+    self.pq = []                         # list of entries arranged in a heap
+    self.entry_finder = {}               # mapping of games to entries
+    self.REMOVED = '<removed-game>'      # placeholder for a removed game
+    self.counter = self.count()               # unique sequence count
+    self.length = 0
+
+  def add_game(self, game, priority=0):
+    'Add a new game or update the priority of an existing game'
+    if game in self.entry_finder:
+        self.remove_game(game)
+    count = next(self.counter)
+    entry = [priority, count, game]
+    self.entry_finder[game] = entry
+    self.heappush(self.pq, entry)
+    self.length += 1
+      
+
+  def remove_game(self, game):
+    'Mark an existing game as REMOVED.  Raise KeyError if not found.'
+    entry = self.entry_finder.pop(game)
+    entry[-1] = self.REMOVED
+    self.length -= 1
+
+  def pop_game(self):
+    'Remove and return the lowest priority game. Raise KeyError if empty.'
+    while self.pq:
+      priority, count, game = self.heappop(self.pq)
+      if game is not self.REMOVED:
+        del self.entry_finder[game]
+        self.length -= 1
+        return game
+    raise KeyError('pop from an empty priority queue')
+  
+  def length(self):
+    return self.length
+
 class Driver(object):
+  import time as time
+  import resource as resource
+  from collections import deque
 
   def __init__(self):
     pass
@@ -216,13 +283,61 @@ class Driver(object):
     import sys
     sys.exit("ALGORITHM FAILURE")
 
+  def astar(self,initialState):
+    from collections import deque
+    nodes_expanded = 0
+    fringer = 1
+    max_search_depth = 0
+    initialList = initialState.split(",")
+    startState = BoardTile(initialList)
+    frontier = PriorityQueue()
+    frontier.add_game(startState)
+    explored = set()
+    exclusion = set()
+    exclusion.add(startState)
+
+    t = self.time.time()
+
+    while not frontier.length == 0:
+      state = frontier.pop_game()
+      explored.add(state)
+      exclusion.add(state)
+
+      if self.goalTest(state):
+        print('SUCCESS')
+        duration = self.time.time() - t
+        ramUsed = self.resource.getrusage(self.resource.RUSAGE_SELF).ru_maxrss / (1024 * 1024)
+        self.__print_results__(state,frontier,explored,duration, nodes_expanded, ramUsed, fringer, max_search_depth)
+        return
+
+      children = state.children()
+      nodes_expanded += 1
+      for child in children:
+        if child in exclusion:
+          pass
+        else:
+          frontier.add_game(child, child.depth + child.manhattan_distance())
+          exclusion.add(child)
+          if child.depth > max_search_depth:
+            max_search_depth = child.depth
+      l = frontier.length
+      if l > fringer:
+        fringer = l
+
+    import sys
+    sys.exit("ALGORITHM FAILURE")
+
+
   def __print_results__(self,state,frontier,explored, duration, nodes_expanded, ram_used, max_fringe_size, max_search_depth):
     f = open("output.txt", "w")
     shortestPath = self.findShortestPath(state)
     f.write('path_to_goal: ' + str(shortestPath) + '\n')
     f.write('cost_of_path: ' + str(len(shortestPath)) + '\n')
     f.write('nodes_expanded: ' + str(nodes_expanded) + '\n')
-    f.write('fringe_size: ' + str(len(frontier)) + '\n')
+    if type(frontier) is self.deque:
+      f.write('fringe_size: ' + str(len(frontier)) + '\n')
+    elif type(frontier) is PriorityQueue:
+      f.write('fringe_size: ' + str(frontier.length) + '\n')
     f.write('max_fringe_size: ' + str(max_fringe_size) + '\n')
     f.write('search_depth: ' + str(state.depth) + '\n')
     f.write('max_search_depth: ' + str(max_search_depth) + '\n')
@@ -261,6 +376,7 @@ class Driver(object):
     #return max(depths)
     
 ####### MAIN PROGRAM EXECUTION ##############
+BoardTile(['2','1','3','5','4','0','6','7','8']).manhattan_distance()
 import sys
 search_type = sys.argv[1]
 board_string = sys.argv[2]
@@ -269,3 +385,5 @@ if search_type == 'bfs':
   driver.bfs(board_string)
 elif search_type == 'dfs':
   driver.dfs(board_string)
+elif search_type == 'ast':
+  driver.astar(board_string)
