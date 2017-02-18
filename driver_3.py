@@ -164,6 +164,16 @@ class PriorityQueue(object):
         self.length -= 1
         return game
     raise KeyError('pop from an empty priority queue')
+
+  def lowest_priority(self):
+    'Return the lowest priority on the queue'
+    mypq = sorted(self.pq)
+    while mypq:
+      priority, count, game = mypq.pop(0)
+      if game is not self.REMOVED:
+        return priority
+    raise KeyError('lowest_priority for an empty priority queue')
+
   
   def length(self):
     return self.length
@@ -171,6 +181,7 @@ class PriorityQueue(object):
 class Driver(object):
   import time as time
   import resource as resource
+  import sys
   from collections import deque
 
   def __init__(self):
@@ -327,6 +338,74 @@ class Driver(object):
     import sys
     sys.exit("ALGORITHM FAILURE")
 
+  def __limited_ast__(self,initialState,limit):
+    from collections import deque
+    fringer=1
+    initialList = initialState.split(",")
+    startState = BoardTile(initialList)
+    frontier = PriorityQueue()
+    frontier.add_game(startState)
+    explored = set()
+    exclusion = set()
+    exclusion.add(startState)
+    nodes_expanded = 0
+    max_search_depth = 0
+    f_of_n = startState.manhattan_distance()
+
+    import resource
+    import time
+    t = time.time()
+    while f_of_n < limit:
+    #while nodes_expanded != 190000 :
+      #print("FRONTIER: ", *frontier)
+      state = frontier.pop_game()
+      explored.add(state)
+      exclusion.add(state)
+      #print("CURRENTLY EXPLORING...", state)
+      #print("EXPLORED: ", *explored)
+      #print("NODES EXPANDED: ", nodes_expanded)
+      if self.goalTest(state):
+        print('SUCCESS')
+        duration = time.time() - t
+        ramUsed = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / (1024 * 1024)
+        self.__print_results__(state,frontier,explored,duration, nodes_expanded, ramUsed, fringer, max_search_depth)
+        return -9
+      
+      children = state.children()
+
+      nodes_expanded = nodes_expanded + 1 
+      
+      #print("UNIQUE CHILDREN:...", *unique_children)
+
+      for child in children:
+        #print("CHILD: ", child.getStart())
+        if child in exclusion:
+          pass
+        else:
+          #print("Appending: ", child)
+          frontier.add_game(child, child.depth + child.manhattan_distance())
+          exclusion.add(child)
+          if child.depth > max_search_depth:
+            max_search_depth = child.depth
+      l = frontier.length
+      if l > fringer:
+        fringer = l
+      f_of_n = frontier.lowest_priority()
+      print('f_of_n: ',f_of_n)
+
+    return f_of_n
+
+  def ida(self,initialState):
+    limit = 200000
+    result = BoardTile(initialState.split(",")).manhattan_distance()
+
+    while result < limit:
+      result = self.__limited_ast__(initialState,result+1)
+      print("RESULT: ",result)
+      if result == -9:
+        return
+
+
 
   def __print_results__(self,state,frontier,explored, duration, nodes_expanded, ram_used, max_fringe_size, max_search_depth):
     f = open("output.txt", "w")
@@ -387,3 +466,5 @@ elif search_type == 'dfs':
   driver.dfs(board_string)
 elif search_type == 'ast':
   driver.astar(board_string)
+elif search_type == 'ida':
+  driver.ida(board_string)
