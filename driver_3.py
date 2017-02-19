@@ -350,12 +350,12 @@ class Driver(object):
     exclusion.add(startState)
     nodes_expanded = 0
     max_search_depth = 0
-    f_of_n = startState.manhattan_distance()
+    return_list = list()
 
     import resource
     import time
     t = time.time()
-    while f_of_n < limit:
+    while frontier.length:
     #while nodes_expanded != 190000 :
       #print("FRONTIER: ", *frontier)
       state = frontier.pop_game()
@@ -379,31 +379,43 @@ class Driver(object):
 
       for child in children:
         #print("CHILD: ", child.getStart())
+        functional_distance = child.depth + child.manhattan_distance()
         if child in exclusion:
           pass
+        elif functional_distance > limit:
+          return_list.append(functional_distance)
         else:
           #print("Appending: ", child)
-          frontier.add_game(child, child.depth + child.manhattan_distance())
+          frontier.add_game(child, functional_distance)
           exclusion.add(child)
           if child.depth > max_search_depth:
             max_search_depth = child.depth
       l = frontier.length
       if l > fringer:
         fringer = l
-      f_of_n = frontier.lowest_priority()
-      print('f_of_n: ',f_of_n)
 
-    return f_of_n
+    return return_list
 
   def ida(self,initialState):
-    limit = 200000
-    result = BoardTile(initialState.split(",")).manhattan_distance()
+    max_limit = 200000
+    current_limit = BoardTile(initialState.split(",")).manhattan_distance()
+    priorities = list()
 
-    while result < limit:
-      result = self.__limited_ast__(initialState,result+1)
-      print("RESULT: ",result)
-      if result == -9:
+    while current_limit < max_limit:
+      print("CURRENT LIMIT: ", current_limit)
+      result = self.__limited_ast__(initialState,current_limit)
+      if type(result) is list: 
+        for r in result:
+          priorities.append(r)
+      elif result == -9:
         return
+      
+      priorities = sorted(priorities)
+      while priorities:
+        p = priorities.pop(0)
+        if p > current_limit:
+          current_limit = p
+          break
 
 
 
