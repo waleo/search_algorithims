@@ -228,7 +228,7 @@ class Driver(object):
         else:
           #print("Appending: ", child)
           frontier.append(child)
-          exclusions.add(state)
+          exclusions.add(child)
           if child.depth > max_search_depth:
             max_search_depth = child.depth
       if len(frontier) > fringer:
